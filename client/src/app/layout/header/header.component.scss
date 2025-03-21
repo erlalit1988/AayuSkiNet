@@ -10,6 +10,9 @@
     width: 32px;
     height: 32px;
 }
-.container{
-    @apply mx-auto max-w-screen-2xl
+
+a {
+    &.active {
+        color:#7d00fa;
+    }
 }
