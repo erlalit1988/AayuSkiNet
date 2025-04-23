@@ -6,7 +6,7 @@ export type User = {
 }
 
 export type Address = {
-    line1: String;
+    line1: string;
     line2?: string;
     city: string;
     state:string;
