@@ -9,13 +9,15 @@ import { SnackbarService } from '../../core/services/snackbar.service';
 import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox';
 import { StepperSelectionEvent } from '@angular/cdk/stepper';
 import { Address } from '../../shared/models/user';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, last } from 'rxjs';
 import { AccountService } from '../../core/services/account.service';
 import { CheckoutDeliveryComponent } from "./checkout-delivery/checkout-delivery.component";
 import { CheckoutReviewComponent } from "./checkout-review/checkout-review.component";
 import { CartService } from '../../core/services/cart.service';
 import { CurrencyPipe, JsonPipe } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { OrderToCreate, ShippingAddress } from '../../shared/models/order';
+import { OrderService } from '../../core/services/order.service';
 @Component({
   standalone: true,
   imports: [
@@ -39,6 +41,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   private snackbar = inject(SnackbarService);
   private router = inject(Router);
   cartService = inject(CartService);
+  private orderService = inject(OrderService);
   addressElement?: StripeAddressElement;
   paymentElement?: StripePaymentElement;
   saveAddress = false; // Initialize saveAddress to false
@@ -98,7 +101,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   async onStepChange(event: StepperSelectionEvent) {
     if (event.selectedIndex === 1) {
      if(this.saveAddress) {
-      const address =await this.getAddressFromStripeAdress();
+      const address =await this.getAddressFromStripeAdress() as Address;
       address && firstValueFrom(this.accountService.updateAddress(address));
      }
     }
@@ -115,18 +118,25 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   try{
     if(this.confirmationToken) {
       const result = await this.stripeService.confirmPayment(this.confirmationToken);
-      if(result.error) {
-        throw new Error(result.error.message);
-      } else {
+      
+      if(result.paymentIntent?.status === 'succeeded') {
+        const order = await this.createOrderModel();
+        const orderResult = await firstValueFrom(this.orderService.createOrder(order));
+        if(orderResult) {
          this.cartService.deleteCart();
          this.cartService.selectedDelivery.set(null);
          this.router.navigateByUrl('/checkout/success');
+        }
+        else {
+          throw new Error('Order creation failed.');
+        }
+      } else if(result.error) {
+        throw new Error(result.error.message);
+      } else {
+         throw new Error('Something went wrong.');
       }
-     
-    } else {
-      this.snackbar.error('Confirmation token is not available.');
     }
-
+    
   } catch(error: any) {
     this.snackbar.error(error.message || 'An error occurred during payment confirmation.');
     stepper.previous();
@@ -134,11 +144,35 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.loading = false;
   }
  } 
- private async getAddressFromStripeAdress(): Promise<Address | null> {
+
+private async createOrderModel(): Promise<OrderToCreate> {
+  // Ensure that the cart, shipping address, and card details are available before creating the order model
+  const cart = this.cartService.cart();
+  const shippingAddress = await this.getAddressFromStripeAdress() as ShippingAddress;
+  const card = this.confirmationToken?.payment_method_preview.card;
+  if (!cart?.id || !shippingAddress || !card || !cart.deliveryMethodId) {
+    throw new Error('Missing required information to create order.');
+  }
+  return {
+    cartId: cart.id,
+    paymentSummary: {
+      last4: +card.last4,
+      brand: card.brand,
+      expMonth: card.exp_month,
+      expYear: card.exp_year
+    },
+    deliveryMethodId: cart.deliveryMethodId,
+    shippingAddress
+  }
+   
+} 
+ private async getAddressFromStripeAdress(): Promise<Address | ShippingAddress | null> {
    const result = await this.addressElement?.getValue();
    const address = result?.value.address;
+   
    if (address) {
       return {
+        name: result.value.name, 
         line1: address.line1,
         line2: address.line2 || undefined,
         city: address.city,

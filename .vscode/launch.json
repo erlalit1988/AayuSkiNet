@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Java: Spring Boot API Debug",
+            "type": "java",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.aayuskinet.api.ApiApplication", // Replace with your actual main class
+            "projectName": "api",
+            "args": [],
+            "env": {},
+            "console": "integratedTerminal"
+        },
+        {
             "name": "C#: API Debug",
             "type": "dotnet",
             "request": "launch",
@@ -15,6 +26,5 @@
             "type": "coreclr",
             "request": "attach"
         }
-
     ]
 }

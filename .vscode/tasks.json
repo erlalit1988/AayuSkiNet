@@ -1,0 +1,25 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Java Project",
+			"type": "shell",
+			"command": "mvn clean install",
+			"args": [],
+			"problemMatcher": [
+				"$javac"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run Spring Boot API",
+			"type": "shell",
+			"command": "mvn spring-boot:run -f java-api/api/pom.xml",
+			"args": [],
+			"problemMatcher": [
+				"$javac"
+			],
+			"group": "run"
+		}
+	]
+}

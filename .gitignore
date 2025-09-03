@@ -57,6 +57,11 @@ nunit-*.xml
 [Rr]eleasePS/
 dlldata.c
 
+# Java API sensitive files
+java-api/**/application.properties
+java-api/**/application-*.properties
+java-api/**/.env
+
 # Benchmark Results
 BenchmarkDotNet.Artifacts/
 
