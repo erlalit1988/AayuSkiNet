@@ -58,7 +58,7 @@ nunit-*.xml
 dlldata.c
 
 # Java API sensitive files
-java-api/**/application.properties
+# java-api/**/application.properties
 java-api/**/application-*.properties
 java-api/**/.env
 

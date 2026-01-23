@@ -1,0 +1,107 @@
+sequenceDiagram
+    participant User
+    participant Angular(Client)
+    participant AccountService(Angular)
+    participant API(AccountController)
+    participant Identity(SignInManager)
+    participant Database(StoreContext)
+@startuml ECommerceFlows
+actor User
+participant "Angular Client" as Angular
+participant "AccountService" as AccountService
+participant "API (AccountController)" as API
+participant "Identity (SignInManager)" as Identity
+participant "Database (StoreContext)" as Database
+
+'--- Registration & Login ---
+User -> Angular: Fill registration form
+Angular -> AccountService: register(values)
+AccountService -> API: POST /api/account/register
+API -> Identity: CreateAsync(user, password)
+Identity -> Database: Save new user
+Database --> Identity: Success/Failure
+Identity --> API: Result
+API --> AccountService: Registration response
+AccountService --> Angular: Show success/error
+
+User -> Angular: Fill login form
+Angular -> AccountService: login(values)
+AccountService -> API: POST /api/account/login
+API -> Identity: Authenticate user
+Identity -> Database: Validate credentials
+Database --> Identity: Success/Failure
+Identity --> API: Result
+API --> AccountService: Login response (user info)
+AccountService --> Angular: Set currentUser, redirect
+
+'--- Cart Flow ---
+participant "CartService" as CartService
+participant "API (CartController)" as CartAPI
+
+User -> Angular: Add product to cart
+Angular -> CartService: addToCart(product)
+CartService -> CartAPI: POST /api/cart/add
+CartAPI -> Database: Update cart items
+Database --> CartAPI: Success/Failure
+CartAPI --> CartService: Cart update response
+CartService --> Angular: Update cart UI
+
+User -> Angular: View cart
+Angular -> CartService: getCart()
+CartService -> CartAPI: GET /api/cart
+CartAPI -> Database: Fetch cart items
+Database --> CartAPI: Cart data
+CartAPI --> CartService: Cart data
+CartService --> Angular: Show cart
+
+'--- Orders Flow ---
+participant "OrderService" as OrderService
+participant "API (OrdersController)" as OrdersAPI
+
+User -> Angular: Place order
+Angular -> OrderService: placeOrder(orderDetails)
+OrderService -> OrdersAPI: POST /api/orders
+OrdersAPI -> Database: Create order
+Database --> OrdersAPI: Order confirmation
+OrdersAPI --> OrderService: Order response
+OrderService --> Angular: Show order confirmation
+
+User -> Angular: View orders
+Angular -> OrderService: getOrders()
+OrderService -> OrdersAPI: GET /api/orders
+OrdersAPI -> Database: Fetch orders
+Database --> OrdersAPI: Orders data
+OrdersAPI --> OrderService: Orders data
+OrderService --> Angular: Show orders
+
+'--- Checkout Flow ---
+participant "PaymentService" as PaymentService
+participant "API (PaymentsController)" as PaymentsAPI
+
+User -> Angular: Checkout
+Angular -> PaymentService: checkout(paymentInfo)
+PaymentService -> PaymentsAPI: POST /api/payments/checkout
+PaymentsAPI -> Database: Process payment, update order status
+Database --> PaymentsAPI: Payment result
+PaymentsAPI --> PaymentService: Payment response
+PaymentService --> Angular: Show payment status
+@enduml
+    User->>Angular(Client): Fill registration form
+    Angular(Client)->>AccountService(Angular): register(values)
+    AccountService(Angular)->>API(AccountController): POST /api/account/register
+    API(AccountController)->>Identity(SignInManager): CreateAsync(user, password)
+    Identity(SignInManager)->>Database(StoreContext): Save new user
+    Database(StoreContext)-->>Identity(SignInManager): Success/Failure
+    Identity(SignInManager)-->>API(AccountController): Result
+    API(AccountController)-->>AccountService(Angular): Registration response
+    AccountService(Angular)-->>Angular(Client): Show success/error
+
+    User->>Angular(Client): Fill login form
+    Angular(Client)->>AccountService(Angular): login(values)
+    AccountService(Angular)->>API(AccountController): POST /api/account/login
+    API(AccountController)->>Identity(SignInManager): Authenticate user
+    Identity(SignInManager)->>Database(StoreContext): Validate credentials
+    Database(StoreContext)-->>Identity(SignInManager): Success/Failure
+    Identity(SignInManager)-->>API(AccountController): Result
+    API(AccountController)-->>AccountService(Angular): Login response (user info)
+    AccountService(Angular)-->>Angular(Client): Set currentUser, redirect
